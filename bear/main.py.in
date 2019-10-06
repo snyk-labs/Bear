@@ -340,11 +340,12 @@ def capture(args, tools):
         # read the intercepted exec calls
         calls = (parse_exec_trace(file) for file in exec_trace_files(tmp_dir))
         safe_calls = (x for x in calls if x is not None)
-        current = compilations(safe_calls, tools)
-        # filter out not desired entries
-        include_filter = include(args.include, args.exclude)
-        filtered = set(entry for entry in current if include_filter(entry))
-        return exit_code, iter(filtered)
+        return exit_code, iter(list(safe_calls))
+        # current = compilations(safe_calls, tools)
+        # # filter out not desired entries
+        # include_filter = include(args.include, args.exclude)
+        # filtered = set(entry for entry in current if include_filter(entry))
+        # return exit_code, iter(filtered)
 
 
 def include(includes, excludes):
@@ -781,9 +782,10 @@ class CompilationDatabase:
         :param filename: the destination file name
         :param iterator: iterator of Compilation objects. """
 
-        entries = [entry.as_db_entry(field_output) for entry in iterator]
+        entries = [{ "pwd": execution.cwd, "cmd": execution.cmd[0], "args": execution.cmd[1:] } for execution in iterator]
+        # entries = [entry.as_db_entry(field_output) for entry in iterator]
         with open(filename, 'w') as handle:
-            json.dump(entries, handle, sort_keys=True, indent=4)
+            json.dump(entries, handle, indent=4)
 
     @staticmethod
     def load(filename, tools):
